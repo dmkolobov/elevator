@@ -12,7 +12,7 @@
   as it's lighter and darker shades."
   [color]
   (zipmap [:lightest :lighter :regular :darker :darkest]
-          (map (partial shade color) [-40 -20 0 20 40])))
+          (map (partial shade color) [40 20 0 -20 -40])))
 
 (def re-rgba #"rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*\d+(\.\d+)?\s*\)")
 (def re-rgb  #"rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)")
@@ -20,11 +20,14 @@
 (defn parse-computed
   [computed-color]
   (println computed-color)
-  (let [match (or (re-find re-rgba computed-color)
-                  (re-find re-rgb  computed-color))]
-    (condp = (count match)
-      5 (subvec match 1)
-      4 (conj (subvec match 1) 1.0))))
+  (let [[_ & matches] (or (re-find re-rgba computed-color)
+                          (re-find re-rgb  computed-color))
+        matches (vec
+                  (map js/parseInt matches))]
+    (condp = (count matches)
+      4 (conj (vec (map js/parseInt (subvec matches 0 3)))
+              (js/parseFloat (pop matches)))
+      3 (conj matches 1.0))))
 
 (defn css-color
   [color]

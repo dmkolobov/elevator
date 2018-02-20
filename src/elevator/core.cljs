@@ -2,6 +2,8 @@
     (:require [elevator.color :refer [color-swatch css-color parse-computed]]
 
               [clojure.string :as string]
+              [cljs.pprint :refer [pprint]]
+
               [reagent.core :as reagent]
               [re-frame.core :refer [reg-event-db
                                      reg-event-fx
@@ -19,7 +21,25 @@
 ;; ---- data  --------------------------------------------------------
 ;; -------------------------------------------------------------------
 
-(defrecord Floor [html width heigth depth base-color])
+(defrecord Floor [html width height depth base-color])
+(defrecord Building [width height layout])
+
+(defn center-floors
+  [{:keys [width layout] :as building}]
+  (assoc building
+    :layout (map (fn [[floor [_ y]]]
+                   [floor [(- width (:width floor)) y]])
+                 layout)))
+
+(defn ->building
+  [floors & {:keys [gap]}]
+  (reduce (fn [building {:keys [width height] :as floor}]
+            (-> building
+                (update :width max width)
+                (update :height + height gap)
+                (update :layout assoc floor [0 (+ (:height building) gap)])))
+          (Building. 0 (:height (first floors)) {(first floors) [0 0]})
+          (rest floors)))
 
 ;; -------------------------------------------------------------------
 ;; ---- events -------------------------------------------------------
@@ -28,7 +48,9 @@
 (reg-event-db
   ::make-elevator
   (fn [db [_ floors]]
-    (assoc db ::floors floors)))
+    (assoc db ::floors (-> floors
+                           (->building :gap 20)
+                           (center-floors)))))
 
 ;; -------------------------------------------------------------------
 ;; ---- rendering ----------------------------------------------------
@@ -104,7 +126,7 @@
 (defn bootstrap
   [elevator-node]
   (let [floors (map-html node->floor (.-children elevator-node))]
-    (println floors)))
+    (pprint (->building floors :gap 20))))
 
 ;; -------------------------------------------------------------------
 ;; ---- page load ----------------------------------------------------
