@@ -27,19 +27,22 @@
 (defn center-floors
   [{:keys [width layout] :as building}]
   (assoc building
-    :layout (map (fn [[floor [_ y]]]
-                   [floor [(/ (- width (:width floor)) 2) y]])
-                 layout)))
+    :layout (reduce conj
+                    {}
+                    (map (fn [[floor [_ y]]]
+                      [floor [(/ (- width (:width floor)) 2) y]])
+                    layout))))
 
 (defn ->building
   [[pent & floors] & {:keys [gap]}]
   (center-floors
     (reduce (fn [building {:keys [width height] :as floor}]
-              (-> building
-                  (update :width max width)
-                  (update :height + height gap)
-                  (update :layout assoc floor [0 (+ (:height building) gap)])))
-            (Building. (:width pent) (:height pent) {pent [0 0]})
+              (let [y (:height building)]
+                (-> building
+                    (update :width max width)
+                    (assoc :height (+ y gap height))
+                    (update :layout assoc floor [0 y]))))
+            (Building. (:width pent) (+ gap (:height pent)) {pent [0 0]})
             floors)))
 
 ;; -------------------------------------------------------------------
@@ -47,10 +50,30 @@
 ;; -------------------------------------------------------------------
 
 (reg-event-db
-  ::make-elevator
-  (fn [db [_ floors]]
-    (println floors)
-    (assoc db ::building (->building floors :gap 20))))
+  ::init
+  (fn [db [_ floors window-height]]
+    (assoc db ::building      (->building floors :gap 20)
+              ::window-height window-height)))
+
+(reg-event-db
+  ::focus-floor
+  (fn [db [_ floor]]
+    (println floor)
+    (assoc db ::focus floor)))
+
+(reg-event-db
+  ::record-window-height
+  (fn [db [_ height]]
+    (assoc db ::window-height height)))
+
+(reg-sub
+  ::focus-y
+  (fn [db]
+    (let [{:keys [height] :as foc} (::focus db)
+          {:keys [layout]}         (::building db)
+          wh                       (::window-height db)
+          [_ y]                    (get layout foc)]
+      (+ (- 0 y (/ height 2)) (/ wh 2)))))
 
 ;; -------------------------------------------------------------------
 ;; ---- rendering ----------------------------------------------------
@@ -60,34 +83,33 @@
 (defn translate-z [z] (str "translateZ("z"px)"))
 (defn t-origin [x y]  (str x"px "y"px"))
 
+(defn translate-3d [x y z] (str "translate3d("x"px,"y"px,"z"px)"))
+
 (defn render-floor
-  [{:keys [html width height depth base-color]} [x y]]
+  [{:keys [html width height depth base-color] :as floor} [x y]]
   (let [{:keys [lightest lighter darker darkest]} (color-swatch base-color)]
-    [:div {:style {:transform (translate x y)
-                   :transform-style "preserve-3d"
-                   :position  "absolute"
-                   }}
+    [:div {:style {:position "absolute"}}
      ;; top
      [:div {:style {:width            width
                     :height           depth
                     :transform-origin (t-origin 0 0)
-                    :transform        (str (translate-z depth) "rotateX(-90deg)")
+                    :transform        (str (translate-3d x y depth) "rotateX(-90deg)")
                     :position         "absolute"
                     :background-color (css-color darkest)}}
       ]
      ;; right
      [:div {:style {:width            depth
                     :height           height
-                    :transform-origin (t-origin width 0)
-                    :transform        (str (translate-z width) "rotateY(-90deg)")
+                    :transform-origin (t-origin 0 0)
+                    :transform        (str (translate-3d (+ x width) y 0) "rotateY(-90deg)")
                     :position         "absolute"
                     :background-color (css-color darker)}}
-      ]
+      [:h1 (str y)]]
      ;; bottom
      [:div {:style {:width            width
                     :height           depth
-                    :transform-origin (t-origin 0 height)
-                    :transform        (str (translate-z height) "rotateX(90deg)")
+                    :transform-origin (t-origin 0 0)
+                    :transform        (str (translate-3d x (+ y height) 0) "rotateX(90deg)")
                     :position         "absolute"
                     :background-color (css-color lightest)}}
       ]
@@ -95,14 +117,15 @@
      [:div {:style {:width            depth
                     :height           height
                     :transform-origin (t-origin 0 0)
-                    :transform        (str (translate-z depth) "rotateY(90deg)")
+                    :transform        (str (translate-3d x y depth) "rotateY(90deg)")
                     :position         "absolute"
                     :background-color (css-color lighter)}}
       ]
      [:div {:style {:background-color (css-color base-color)
-                    :transform        (str "translateZ(0px)")
+                    :transform        (translate-3d x y 0)
                     :width            width
                     :height           height}
+            :on-click (fn [] (dispatch [::focus-floor floor]))
             :dangerouslySetInnerHTML {:__html html}}]]))
 
 ;; -------------------------------------------------------------------
@@ -125,8 +148,9 @@
 
 (defn bootstrap
   [elevator-node]
-  (let [floors (map-html node->floor (.-children elevator-node))]
-    (dispatch [::make-elevator floors])))
+  (let [floors        (map-html node->floor (.-children elevator-node))
+        window-height (.-height js/window)]
+    (dispatch [::init floors window-height])))
 
 ;; -------------------------------------------------------------------
 ;; ---- page load ----------------------------------------------------
@@ -136,7 +160,7 @@
   {:html   "<div>foobar</div>"
    :width  500
    :height 300
-   :depth  200
+   :depth  300
    :color  [101 155 155 1.0]})
 
 (reg-sub
@@ -148,10 +172,13 @@
   (let [building (subscribe [::building])]
     (fn []
       (println @building)
-      [:div {:style {:perspective "1000px"
-                     :height      "1000px"
+      [:div {:style {:perspective "2000px"
+                     :display     "block"
+                     :margin      "0 auto"
+                     :width       (:width @building)
+                     :height      "100%"
                      :position    "relative"}}
-       [render-floor example-floor [0 0]]
+       ;[:div {:style {:position "absolute"}}
        (map (fn [[floor position]]
               ^{:key position}
               [render-floor floor position])
