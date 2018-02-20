@@ -28,18 +28,19 @@
   [{:keys [width layout] :as building}]
   (assoc building
     :layout (map (fn [[floor [_ y]]]
-                   [floor [(- width (:width floor)) y]])
+                   [floor [(/ (- width (:width floor)) 2) y]])
                  layout)))
 
 (defn ->building
-  [floors & {:keys [gap]}]
-  (reduce (fn [building {:keys [width height] :as floor}]
-            (-> building
-                (update :width max width)
-                (update :height + height gap)
-                (update :layout assoc floor [0 (+ (:height building) gap)])))
-          (Building. 0 (:height (first floors)) {(first floors) [0 0]})
-          (rest floors)))
+  [[pent & floors] & {:keys [gap]}]
+  (center-floors
+    (reduce (fn [building {:keys [width height] :as floor}]
+              (-> building
+                  (update :width max width)
+                  (update :height + height gap)
+                  (update :layout assoc floor [0 (+ (:height building) gap)])))
+            (Building. (:width pent) (:height pent) {pent [0 0]})
+            floors)))
 
 ;; -------------------------------------------------------------------
 ;; ---- events -------------------------------------------------------
@@ -48,9 +49,8 @@
 (reg-event-db
   ::make-elevator
   (fn [db [_ floors]]
-    (assoc db ::floors (-> floors
-                           (->building :gap 20)
-                           (center-floors)))))
+    (println floors)
+    (assoc db ::building (->building floors :gap 20))))
 
 ;; -------------------------------------------------------------------
 ;; ---- rendering ----------------------------------------------------
@@ -61,8 +61,8 @@
 (defn t-origin [x y]  (str x"px "y"px"))
 
 (defn render-floor
-  [{:keys [html width height depth color]} [x y]]
-  (let [{:keys [lightest lighter darker darkest]} (color-swatch color)]
+  [{:keys [html width height depth base-color]} [x y]]
+  (let [{:keys [lightest lighter darker darkest]} (color-swatch base-color)]
     [:div {:style {:transform (translate x y)
                    :transform-style "preserve-3d"
                    :position  "absolute"
@@ -99,7 +99,7 @@
                     :position         "absolute"
                     :background-color (css-color lighter)}}
       ]
-     [:div {:style {:background-color (css-color color)
+     [:div {:style {:background-color (css-color base-color)
                     :transform        (str "translateZ(0px)")
                     :width            width
                     :height           height}
@@ -117,16 +117,16 @@
         d    (.getAttribute floor-node "data-depth")
         c    (.getPropertyValue (.getComputedStyle js/window floor-node)
                                 "background-color")]
-    (Floor. (.-outerHTML floor-node)
+    (Floor. (str (.-outerHTML floor-node))
             w
             h
-            500
+            300
             (parse-computed c))))
 
 (defn bootstrap
   [elevator-node]
   (let [floors (map-html node->floor (.-children elevator-node))]
-    (pprint (->building floors :gap 20))))
+    (dispatch [::make-elevator floors])))
 
 ;; -------------------------------------------------------------------
 ;; ---- page load ----------------------------------------------------
@@ -139,16 +139,28 @@
    :depth  200
    :color  [101 155 155 1.0]})
 
-(defn hello-world []
-  [:div {:style {:perspective "1000px"
-                 :height      "1000px"
-                 :position    "relative"}}
-   [render-floor example-floor [200 300]]])
+(reg-sub
+  ::building
+  #(get % ::building))
+
+(defn hello-world
+  []
+  (let [building (subscribe [::building])]
+    (fn []
+      (println @building)
+      [:div {:style {:perspective "1000px"
+                     :height      "1000px"
+                     :position    "relative"}}
+       [render-floor example-floor [0 0]]
+       (map (fn [[floor position]]
+              ^{:key position}
+              [render-floor floor position])
+            (:layout @building))])))
 
 (bootstrap (. js/document (getElementById "my-elevator")))
 
 (reagent/render-component [hello-world]
-                          (. js/document (getElementById "my-elevator")))
+                          (. js/document (getElementById "app")))
 
 (defn on-js-reload []
   ;; optionally touch your app-state to force rerendering depending on
