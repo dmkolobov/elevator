@@ -1,6 +1,6 @@
 /* some style */
 
-html, body, #app {
+html, body, #my-elevator {
     margin: 0;
     padding: 0;
     height: 100%;
@@ -9,10 +9,6 @@ html, body, #app {
 body {
     background:  rgba(151, 205, 205, 1.0);
     font-family: 'Inconsolata', monospace;
-}
-
-#app div {
-    transform-style: preserve-3d;
 }
 
 #floor-1, #floor-2, #floor-3 {

@@ -15,7 +15,7 @@
 
 (defn map-html
   [f html-coll]
-  (for [i (range (.-length html-coll))] (f (.item html-coll i))))
+  (doall (for [i (range (.-length html-coll))] (f (.item html-coll i)))))
 
 ;; -------------------------------------------------------------------
 ;; ---- data  --------------------------------------------------------
@@ -52,13 +52,13 @@
 (reg-event-db
   ::init
   (fn [db [_ floors window-height]]
-    (assoc db ::building      (->building floors :gap 20)
-              ::window-height window-height)))
+    (assoc db ::building      (->building floors :gap 100)
+              ::window-height window-height
+              ::focus         (first floors))))
 
 (reg-event-db
   ::focus-floor
   (fn [db [_ floor]]
-    (println floor)
     (assoc db ::focus floor)))
 
 (reg-event-db
@@ -88,45 +88,52 @@
 (defn render-floor
   [{:keys [html width height depth base-color] :as floor} [x y]]
   (let [{:keys [lightest lighter darker darkest]} (color-swatch base-color)]
-    [:div {:style {:position "absolute"}}
-     ;; top
-     [:div {:style {:width            width
-                    :height           depth
-                    :transform-origin (t-origin 0 0)
-                    :transform        (str (translate-3d x y depth) "rotateX(-90deg)")
+    [:div {:style {:position        "absolute"
+                   :backface-visibility "hidden"
+                   :transform-style "preserve-3d"}}
+     ; content
+     [:div {:style {:background-color (css-color base-color)
+                    :transform        (translate-3d x y 0)
                     :position         "absolute"
-                    :background-color (css-color darkest)}}
-      ]
-     ;; right
+                    :width            width
+                    :height           height}
+            :on-click (fn [] (dispatch [::focus-floor floor]))
+            :dangerouslySetInnerHTML {:__html html}}]
+     ; right
      [:div {:style {:width            depth
                     :height           height
                     :transform-origin (t-origin 0 0)
                     :transform        (str (translate-3d (+ x width) y 0) "rotateY(-90deg)")
+
                     :position         "absolute"
-                    :background-color (css-color darker)}}
-      [:h1 (str y)]]
-     ;; bottom
-     [:div {:style {:width            width
-                    :height           depth
-                    :transform-origin (t-origin 0 0)
-                    :transform        (str (translate-3d x (+ y height) 0) "rotateX(90deg)")
-                    :position         "absolute"
-                    :background-color (css-color lightest)}}
-      ]
-     ;; left
+                    :background-color (css-color darker)}}]
+     ; left
      [:div {:style {:width            depth
                     :height           height
                     :transform-origin (t-origin 0 0)
                     :transform        (str (translate-3d x y depth) "rotateY(90deg)")
+
                     :position         "absolute"
                     :background-color (css-color lighter)}}
       ]
-     [:div {:style {:background-color (css-color base-color)
-                    :transform        (translate-3d x y 0)
-                    :width            width
-                    :height           height}
-            :on-click (fn [] (dispatch [::focus-floor floor]))
-            :dangerouslySetInnerHTML {:__html html}}]]))
+      ; top
+     [:div.top {:style {:width            width
+                        :height           depth
+                        :transform-origin (t-origin 0 0)
+                        :transform        (str (translate-3d x y depth) "rotateX(-90deg)")
+
+                        :position         "absolute"
+                        :background-color (css-color darkest)}}
+      ]
+     ; bottom
+     [:div {:style {:width            width
+                    :height           depth
+                    :transform-origin (t-origin 0 0)
+                    :transform        (str (translate-3d x (+ y height) 0) "rotateX(90deg)")
+
+                    :position         "absolute"
+                    :background-color (css-color lightest)}}
+      ]]))
 
 ;; -------------------------------------------------------------------
 ;; ---- initialization -----------------------------------------------
@@ -135,8 +142,8 @@
 (defn node->floor
   [floor-node]
   (let [rect (.getBoundingClientRect floor-node)
-        w    (.-width rect)
-        h    (.-height rect)
+        w    (.ceil js/Math (.-width rect))
+        h    (.ceil js/Math (.-height rect))
         d    (.getAttribute floor-node "data-depth")
         c    (.getPropertyValue (.getComputedStyle js/window floor-node)
                                 "background-color")]
@@ -149,7 +156,7 @@
 (defn bootstrap
   [elevator-node]
   (let [floors        (map-html node->floor (.-children elevator-node))
-        window-height (.-height js/window)]
+        window-height (.-innerHeight js/window)]
     (dispatch [::init floors window-height])))
 
 ;; -------------------------------------------------------------------
@@ -169,25 +176,28 @@
 
 (defn hello-world
   []
-  (let [building (subscribe [::building])]
+  (let [building (subscribe [::building])
+        foc-y    (subscribe [::focus-y])]
     (fn []
-      (println @building)
-      [:div {:style {:perspective "2000px"
+      [:div {:style {:perspective 2000
                      :display     "block"
                      :margin      "0 auto"
                      :width       (:width @building)
                      :height      "100%"
                      :position    "relative"}}
-       ;[:div {:style {:position "absolute"}}
-       (map (fn [[floor position]]
-              ^{:key position}
-              [render-floor floor position])
-            (:layout @building))])))
+       [:div {:style {:position        "absolute"
+                      :transform-style "preserve-3d"
+                      :transition      "transform 1s ease-in 0.1s"
+                      :transform       (translate-3d 0 @foc-y 1)}}
+        (map-indexed (fn [i [floor position]]
+                       ^{:key i}
+                       [render-floor floor position])
+                     (:layout @building))]])))
 
 (bootstrap (. js/document (getElementById "my-elevator")))
 
 (reagent/render-component [hello-world]
-                          (. js/document (getElementById "app")))
+                          (. js/document (getElementById "my-elevator")))
 
 (defn on-js-reload []
   ;; optionally touch your app-state to force rerendering depending on
