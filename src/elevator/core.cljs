@@ -86,14 +86,15 @@
 (defn translate-3d [x y z] (str "translate3d("x"px,"y"px,"z"px)"))
 
 (defn render-floor
-  [{:keys [html width height depth base-color] :as floor} [x y]]
-  (let [{:keys [lightest lighter darker darkest]} (color-swatch base-color)]
-    [:div {:style {:position        "absolute"
-                   :backface-visibility "hidden"
-                   :transform-style "preserve-3d"}}
+  [{:keys [html width height depth base-color] :as floor} [x y] foc-y]
+  (let [{:keys [lightest lighter darker darkest]} (color-swatch base-color)
+        y (+ y foc-y)]
+    [:div {:style {:transform-style "preserve-3d"
+                   :backface-visibility "hidden"}}
      ; content
      [:div {:style {:background-color (css-color base-color)
                     :transform        (translate-3d x y 0)
+                    :transition       "transform 1s cubic-bezier(0.165, 0.840, 0.440, 1.000)"
                     :position         "absolute"
                     :width            width
                     :height           height}
@@ -104,6 +105,7 @@
                     :height           height
                     :transform-origin (t-origin 0 0)
                     :transform        (str (translate-3d (+ x width) y 0) "rotateY(-90deg)")
+                    :transition       "transform 1s cubic-bezier(0.165, 0.840, 0.440, 1.000)"
 
                     :position         "absolute"
                     :background-color (css-color darker)}}]
@@ -112,28 +114,31 @@
                     :height           height
                     :transform-origin (t-origin 0 0)
                     :transform        (str (translate-3d x y depth) "rotateY(90deg)")
+                    :transition       "transform 1s cubic-bezier(0.165, 0.840, 0.440, 1.000)"
 
                     :position         "absolute"
                     :background-color (css-color lighter)}}
       ]
-      ; top
-     [:div.top {:style {:width            width
-                        :height           depth
-                        :transform-origin (t-origin 0 0)
-                        :transform        (str (translate-3d x y depth) "rotateX(-90deg)")
+       ; top
+      [:div.top {:style {:width            width
+                         :height           depth
+                         :transform-origin (t-origin 0 0)
+                         :transform        (str (translate-3d x y depth) "rotateX(-90deg)")
+                         :transition       "transform 1s cubic-bezier(0.165, 0.840, 0.440, 1.000)"
 
-                        :position         "absolute"
-                        :background-color (css-color darkest)}}
-      ]
-     ; bottom
-     [:div {:style {:width            width
-                    :height           depth
-                    :transform-origin (t-origin 0 0)
-                    :transform        (str (translate-3d x (+ y height) 0) "rotateX(90deg)")
+                         :position         "absolute"
+                         :background-color (css-color darkest)}}
+       ]
+      ; bottom
+      [:div {:style {:width            width
+                     :height           depth
+                     :transform-origin (t-origin 0 0)
+                     :transform        (str (translate-3d x (+ y height) 0) "rotateX(90deg)")
+                     :transition       "transform 1s cubic-bezier(0.165, 0.840, 0.440, 1.000)"
 
-                    :position         "absolute"
-                    :background-color (css-color lightest)}}
-      ]]))
+                     :position         "absolute"
+                     :background-color (css-color lightest)}}]
+     ]))
 
 ;; -------------------------------------------------------------------
 ;; ---- initialization -----------------------------------------------
@@ -142,8 +147,8 @@
 (defn node->floor
   [floor-node]
   (let [rect (.getBoundingClientRect floor-node)
-        w    (.ceil js/Math (.-width rect))
-        h    (.ceil js/Math (.-height rect))
+        w    (.-width rect)
+        h    (.-height rect)
         d    (.getAttribute floor-node "data-depth")
         c    (.getPropertyValue (.getComputedStyle js/window floor-node)
                                 "background-color")]
@@ -180,19 +185,18 @@
         foc-y    (subscribe [::focus-y])]
     (fn []
       [:div {:style {:perspective 2000
+                     :backface-visibility "hidden"
+                     :transform-style "preserve-3d"
                      :display     "block"
                      :margin      "0 auto"
                      :width       (:width @building)
-                     :height      "100%"
+                     :height      "101%"
                      :position    "relative"}}
-       [:div {:style {:position        "absolute"
-                      :transform-style "preserve-3d"
-                      :transition      "transform 1s ease-in 0.1s"
-                      :transform       (translate-3d 0 @foc-y 1)}}
+       (doall
         (map-indexed (fn [i [floor position]]
                        ^{:key i}
-                       [render-floor floor position])
-                     (:layout @building))]])))
+                       [render-floor floor position @foc-y])
+                     (:layout @building)))])))
 
 (bootstrap (. js/document (getElementById "my-elevator")))
 

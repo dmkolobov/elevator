@@ -12,7 +12,7 @@ body {
     overflow: hidden;
 }
 
-#floor-1, #floor-2, #floor-3 {
+#floor-1, #floor-2, #floor-3, #floor-4 {
     text-align: center;
     font-size:  3em;
     padding:    1em;
@@ -20,8 +20,7 @@ body {
 }
 
 #floor-1 { background-color: #659B9B;
-           width:            500px;
-           height:           150px;}
+           display: inline-block;}
 #floor-2 { background-color: #FFA7A7;
            width:            400px;
            height:           200px;}
