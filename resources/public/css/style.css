@@ -9,6 +9,7 @@ html, body, #my-elevator {
 body {
     background:  rgba(151, 205, 205, 1.0);
     font-family: 'Inconsolata', monospace;
+    overflow: hidden;
 }
 
 #floor-1, #floor-2, #floor-3 {
