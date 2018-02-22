@@ -1,0 +1,37 @@
+/* some style */
+
+html, body, #my-elevator {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+.card {
+    backface-visibility: hidden;
+}
+
+body {
+    background:  rgba(151, 205, 205, 1.0);
+    font-family: 'Inconsolata', monospace;
+    overflow: hidden;
+}
+
+#floor-1, #floor-2, #floor-3, #floor-4 {
+    font-size:  3em;
+    padding:    1em;
+    color:      white;
+}
+
+#floor-2, #floor-3, #floor-4 { text-align: center; }
+
+#floor-1 { background-color: #659B9B;
+           display: inline-block;}
+#floor-2 { background-color: #FFA7A7;
+           width:            400px;
+           height:           200px;}
+#floor-3 { background-color: #D3EE9C;
+           width:            450px;
+           height:           100px;}
+#floor-4 { background-color: #aaa;
+          width:             450px;
+          height:            300px;}
