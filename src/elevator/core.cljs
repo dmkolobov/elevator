@@ -94,7 +94,7 @@
      ; content
      [:div.card.content {:style {:background-color (css-color base-color)
                     :transform        (translate-3d x y 0)
-                    :transition       "transform 999ms cubic-bezier(0.165, 0.840, 0.440, 1.000)"
+                    :transition       "transform 600ms cubic-bezier(0.520, -0.600, 0.405, 0.745)"
                     :position         "absolute"
                     :width            width
                     :height           height}
@@ -105,7 +105,7 @@
                     :height           height
                     :transform-origin (t-origin 0 0)
                     :transform        (str (translate-3d (+ x width) y 0) "rotateY(-90deg)")
-                    :transition       "transform 999ms cubic-bezier(0.165, 0.840, 0.440, 1.000)"
+                    :transition       "transform 600ms cubic-bezier(0.520, -0.600, 0.405, 0.745)"
 
                     :position         "absolute"
                     :background-color (css-color darker)}}]
@@ -114,7 +114,7 @@
                     :height           height
                     :transform-origin (t-origin 0 0)
                     :transform        (str (translate-3d x y depth) "rotateY(90deg)")
-                    :transition       "transform 999ms cubic-bezier(0.165, 0.840, 0.440, 1.000)"
+                    :transition       "transform 600ms cubic-bezier(0.520, -0.600, 0.405, 0.745)"
 
                     :position         "absolute"
                     :background-color (css-color lighter)}}
@@ -124,7 +124,7 @@
                          :height           depth
                          :transform-origin (t-origin 0 0)
                          :transform        (str (translate-3d x y depth) "rotateX(-90deg)")
-                         :transition       "transform 999ms cubic-bezier(0.165, 0.840, 0.440, 1.000)"
+                         :transition       "transform 600ms cubic-bezier(0.520, -0.600, 0.405, 0.745)"
 
                          :position         "absolute"
                          :background-color (css-color darkest)}}
@@ -134,7 +134,7 @@
                      :height           depth
                      :transform-origin (t-origin 0 0)
                      :transform        (str (translate-3d x (+ y height) 0) "rotateX(90deg)")
-                     :transition       "transform 999ms cubic-bezier(0.165, 0.840, 0.440, 1.000)"
+                     :transition       "transform 600ms cubic-bezier(0.520, -0.600, 0.405, 0.745)"
 
                      :position         "absolute"
                      :background-color (css-color lightest)}}]
@@ -177,7 +177,7 @@
                         :height blind-h
                         :background-color "rgba(151, 205, 205, 1.0)"
                         :position "absolute"
-                        :transition       "transform 999ms cubic-bezier(0.165, 0.840, 0.440, 1.000)"
+                        :transition       "transform 600ms cubic-bezier(0.520, -0.600, 0.405, 0.745)"
                         :transform (translate-3d 0 blind-y depth)}}]))
 
 
