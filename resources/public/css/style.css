@@ -6,6 +6,11 @@ html, body, #my-elevator {
     height: 100%;
 }
 
+.card.top,
+.card.bottom {
+    backface-visibility: hidden;
+}
+
 body {
     background:  rgba(151, 205, 205, 1.0);
     font-family: 'Inconsolata', monospace;

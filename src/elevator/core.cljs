@@ -92,7 +92,7 @@
     [:div {:style {:transform-style "preserve-3d"
                    :backface-visibility "hidden"}}
      ; content
-     [:div {:style {:background-color (css-color base-color)
+     [:div.card.content {:style {:background-color (css-color base-color)
                     :transform        (translate-3d x y 0)
                     :transition       "transform 1s cubic-bezier(0.165, 0.840, 0.440, 1.000)"
                     :position         "absolute"
@@ -101,7 +101,7 @@
             :on-click (fn [] (dispatch [::focus-floor floor]))
             :dangerouslySetInnerHTML {:__html html}}]
      ; right
-     [:div {:style {:width            depth
+     [:div.card.right {:style {:width            depth
                     :height           height
                     :transform-origin (t-origin 0 0)
                     :transform        (str (translate-3d (+ x width) y 0) "rotateY(-90deg)")
@@ -110,7 +110,7 @@
                     :position         "absolute"
                     :background-color (css-color darker)}}]
      ; left
-     [:div {:style {:width            depth
+     [:div.card.left {:style {:width            depth
                     :height           height
                     :transform-origin (t-origin 0 0)
                     :transform        (str (translate-3d x y depth) "rotateY(90deg)")
@@ -120,7 +120,7 @@
                     :background-color (css-color lighter)}}
       ]
        ; top
-      [:div.top {:style {:width            width
+      [:div.card.top {:style {:width            width
                          :height           depth
                          :transform-origin (t-origin 0 0)
                          :transform        (str (translate-3d x y depth) "rotateX(-90deg)")
@@ -130,7 +130,7 @@
                          :background-color (css-color darkest)}}
        ]
       ; bottom
-      [:div {:style {:width            width
+      [:div.card.bottom {:style {:width            width
                      :height           depth
                      :transform-origin (t-origin 0 0)
                      :transform        (str (translate-3d x (+ y height) 0) "rotateX(90deg)")
