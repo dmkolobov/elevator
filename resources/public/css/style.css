@@ -6,8 +6,7 @@ html, body, #my-elevator {
     height: 100%;
 }
 
-.card.top,
-.card.bottom {
+.card {
     backface-visibility: hidden;
 }
 

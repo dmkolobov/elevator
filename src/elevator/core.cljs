@@ -94,7 +94,7 @@
      ; content
      [:div.card.content {:style {:background-color (css-color base-color)
                     :transform        (translate-3d x y 0)
-                    :transition       "transform 1s cubic-bezier(0.165, 0.840, 0.440, 1.000)"
+                    :transition       "transform 999ms cubic-bezier(0.165, 0.840, 0.440, 1.000)"
                     :position         "absolute"
                     :width            width
                     :height           height}
@@ -105,7 +105,7 @@
                     :height           height
                     :transform-origin (t-origin 0 0)
                     :transform        (str (translate-3d (+ x width) y 0) "rotateY(-90deg)")
-                    :transition       "transform 1s cubic-bezier(0.165, 0.840, 0.440, 1.000)"
+                    :transition       "transform 999ms cubic-bezier(0.165, 0.840, 0.440, 1.000)"
 
                     :position         "absolute"
                     :background-color (css-color darker)}}]
@@ -114,7 +114,7 @@
                     :height           height
                     :transform-origin (t-origin 0 0)
                     :transform        (str (translate-3d x y depth) "rotateY(90deg)")
-                    :transition       "transform 1s cubic-bezier(0.165, 0.840, 0.440, 1.000)"
+                    :transition       "transform 999ms cubic-bezier(0.165, 0.840, 0.440, 1.000)"
 
                     :position         "absolute"
                     :background-color (css-color lighter)}}
@@ -124,7 +124,7 @@
                          :height           depth
                          :transform-origin (t-origin 0 0)
                          :transform        (str (translate-3d x y depth) "rotateX(-90deg)")
-                         :transition       "transform 1s cubic-bezier(0.165, 0.840, 0.440, 1.000)"
+                         :transition       "transform 999ms cubic-bezier(0.165, 0.840, 0.440, 1.000)"
 
                          :position         "absolute"
                          :background-color (css-color darkest)}}
@@ -134,7 +134,7 @@
                      :height           depth
                      :transform-origin (t-origin 0 0)
                      :transform        (str (translate-3d x (+ y height) 0) "rotateX(90deg)")
-                     :transition       "transform 1s cubic-bezier(0.165, 0.840, 0.440, 1.000)"
+                     :transition       "transform 999ms cubic-bezier(0.165, 0.840, 0.440, 1.000)"
 
                      :position         "absolute"
                      :background-color (css-color lightest)}}]
@@ -168,12 +168,18 @@
 ;; ---- page load ----------------------------------------------------
 ;; -------------------------------------------------------------------
 
-(def example-floor
-  {:html   "<div>foobar</div>"
-   :width  500
-   :height 300
-   :depth  300
-   :color  [101 155 155 1.0]})
+(defn render-blinder
+  [scroll-y i [[{:keys [depth height]} [_ y]] [_ [_ y']]]]
+  (let [blind-y (+ y scroll-y height)
+        blind-h (- (+ y' scroll-y) blind-y)]
+    ^{:key (str "blinder" i)}
+    [:div.card {:style {:width "100%"
+                        :height blind-h
+                        :background-color "rgba(151, 205, 205, 1.0)"
+                        :position "absolute"
+                        :transition       "transform 999ms cubic-bezier(0.165, 0.840, 0.440, 1.000)"
+                        :transform (translate-3d 0 blind-y depth)}}]))
+
 
 (reg-sub
   ::building
@@ -193,10 +199,13 @@
                      :height      "101%"
                      :position    "relative"}}
        (doall
-        (map-indexed (fn [i [floor position]]
-                       ^{:key i}
-                       [render-floor floor position @foc-y])
-                     (:layout @building)))])))
+         (concat
+           (map-indexed (fn [i [floor position]]
+                          ^{:key i}
+                          [render-floor floor position @foc-y])
+                        (:layout @building))
+           (map-indexed (partial render-blinder @foc-y)
+                        (partition 2 1 (:layout @building)))))])))
 
 (bootstrap (. js/document (getElementById "my-elevator")))
 
